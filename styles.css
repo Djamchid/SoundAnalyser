@@ -59,19 +59,19 @@ canvas {
     height: 300px;
 }
 
-/* Ajustements pour le spectrogramme */
+/* Spectrogram styles with fixed aspect ratio */
 .spectrogram-wrapper {
     display: flex;
-    height: 300px;
+    height: 600px; /* Taller to match the screenshot */
     width: 100%;
     position: relative;
-    overflow: hidden; /* Pour éviter le débordement pendant la transformation */
+    overflow: hidden;
 }
 
 #spectrogramCanvas {
-    /* Le canvas lui-même ne sera pas tourné - la rotation sera gérée via JavaScript */
     height: 100%;
     width: 100%;
+    /* No need for transform here, we'll handle this in JavaScript */
 }
 
 .axis {
@@ -92,7 +92,7 @@ canvas {
     transform: translateY(-50%) rotate(-90deg);
 }
 
-/* Position spécifique pour les axes du spectrogramme */
+/* Position for the spectrogram axes */
 .spectrogram-wrapper .x-axis {
     bottom: 5px;
     left: 50%;
