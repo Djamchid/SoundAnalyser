@@ -448,17 +448,17 @@ class SoundAnalyzer {
         const height = this.spectrogramCanvas.height;
         const bufferLength = dataArray.length;
         
-        // Create image data for a single row (not column)
-        const imageData = this.spectCtx.createImageData(width, 1);
+        // Create image data for a single column
+        const imageData = this.spectCtx.createImageData(1, height);
         
-        // Fill image data for the current row
-        for (let i = 0; i < width; i++) {
-            // Map canvas x position to frequency bin (logarithmic)
-            // This ensures the x-axis matches the frequency canvas
-            const xRatio = i / width;
+        // Fill image data for the current column
+        for (let i = 0; i < height; i++) {
+            // Map canvas y position to frequency bin (logarithmic)
+            // This ensures the y-axis matches the frequency canvas
+            const yRatio = 1 - (i / height); // Invert y-axis so lower frequencies are at the bottom
             const minLog = Math.log10(20); // 20Hz
             const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
-            const freqLog = minLog + xRatio * (maxLog - minLog);
+            const freqLog = minLog + yRatio * (maxLog - minLog);
             const freq = Math.pow(10, freqLog);
             
             // Find the corresponding frequency bin
@@ -485,30 +485,25 @@ class SoundAnalyzer {
             imageData.data[pixelIndex + 3] = 255;      // A
         }
         
-        // Add the row to the spectrogram at the current position
-        this.spectCtx.putImageData(imageData, 0, this.spectrogramOffset);
+        // Add the column to the spectrogram at the current position
+        this.spectCtx.putImageData(imageData, this.spectrogramOffset, 0);
         
-        // Increment row position (moving down)
+        // Increment column position (moving right to left)
         this.spectrogramOffset++;
         
-        // If we reach the bottom, scroll up
-        if (this.spectrogramOffset >= height) {
-            // Shift existing spectrogram up
+        // If we reach the right edge, scroll left
+        if (this.spectrogramOffset >= width) {
+            // Shift existing spectrogram left
             this.spectCtx.drawImage(
                 this.spectrogramCanvas,
-                0, 1, width, height - 1,
-                0, 0, width, height - 1
+                1, 0, width - 1, height,
+                0, 0, width - 1, height
             );
-            this.spectrogramOffset = height - 1;
+            this.spectrogramOffset = width - 1;
         }
     }
     
     /**
-     * Draw grid lines on the frequency canvas
-     * @param {CanvasRenderingContext2D} ctx - Canvas context
-     * @param {Number} width - Canvas width
-     * @param {Number} height
-     /**
      * Draw grid lines on the frequency canvas
      * @param {CanvasRenderingContext2D} ctx - Canvas context
      * @param {Number} width - Canvas width
