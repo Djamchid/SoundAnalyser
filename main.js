@@ -24,6 +24,9 @@ let analyzer = null;
  * Initialize the application
  */
 function init() {
+    // Ajustement des dimensions du canevas du spectrogramme
+    adjustSpectrogramDimensions();
+
     // Create SoundAnalyzer instance
     analyzer = new SoundAnalyzer({
         frequencyCanvas: frequencyCanvas,
@@ -35,6 +38,7 @@ function init() {
     
     // Handle window resize
     window.addEventListener('resize', () => {
+        adjustSpectrogramDimensions();
         analyzer.setupCanvas();
     });
     
@@ -131,9 +135,33 @@ function init() {
     frequencyCanvas.addEventListener('mousemove', handleFrequencyCanvasHover);
     frequencyCanvas.addEventListener('click', handleFrequencyCanvasClick);
 
-    // Click/hover on spectrogram canvas to show frequency values
+    // Adaptations pour le spectrogramme pivoté
     spectrogramCanvas.addEventListener('mousemove', handleSpectrogramCanvasHover);
     spectrogramCanvas.addEventListener('click', handleSpectrogramCanvasHover);
+}
+
+/**
+ * Ajuste les dimensions du canvas de spectrogramme pour la rotation
+ */
+function adjustSpectrogramDimensions() {
+    const wrapper = document.querySelector('.spectrogram-wrapper');
+    if (wrapper) {
+        const width = wrapper.offsetWidth;
+        const height = wrapper.offsetHeight;
+        
+        // Mise à jour des dimensions du canvas pour garantir une rotation correcte
+        spectrogramCanvas.style.width = height + 'px';
+        spectrogramCanvas.style.height = width + 'px';
+        
+        // Centrer le canvas après rotation
+        const offsetX = (width - height) / 2;
+        const offsetY = (height - width) / 2;
+        spectrogramCanvas.style.transformOrigin = 'center center';
+        spectrogramCanvas.style.position = 'absolute';
+        spectrogramCanvas.style.left = '50%';
+        spectrogramCanvas.style.top = '50%';
+        spectrogramCanvas.style.transform = 'translate(-50%, -50%) rotate(-90deg)';
+    }
 }
 
 /**
@@ -164,18 +192,23 @@ function handleFrequencyCanvasClick(event) {
 function handleSpectrogramCanvasHover(event) {
     if (!analyzer) return;
     
-    const rect = spectrogramCanvas.getBoundingClientRect();
+    const wrapper = document.querySelector('.spectrogram-wrapper');
+    const rect = wrapper.getBoundingClientRect();
+    
+    // Calculer la position relative par rapport au wrapper
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
-    // Convert x position to frequency (logarithmic scale)
-    const xRatio = x / rect.width;
+    // Avec la rotation, l'axe Y du wrapper devient l'axe X des fréquences
+    const yRatio = y / rect.height;
+    
+    // Conversion logarithmique pour les fréquences (comme dans l'original)
     const minLog = Math.log10(20);  // 20Hz
     const maxLog = Math.log10(analyzer.audioContext ? (analyzer.audioContext.sampleRate / 2) : 22050);
-    const freqLog = minLog + xRatio * (maxLog - minLog);
+    const freqLog = minLog + yRatio * (maxLog - minLog);
     const frequency = Math.round(Math.pow(10, freqLog));
     
-    // Update display
+    // Mettre à jour l'affichage
     hzValue.textContent = `${frequency} Hz`;
 }
 
