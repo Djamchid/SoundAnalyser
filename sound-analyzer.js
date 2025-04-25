@@ -285,129 +285,6 @@ class SoundAnalyzer {
                 this.audioElement.controls = false;
                 this.audioElement.loop = true;
             }
-        }
-        this.freqCtx.stroke();
-        
-        // Draw primary frequency line (red)
-        this.freqCtx.beginPath();
-        this.freqCtx.strokeStyle = '#FF4081';
-        this.freqCtx.lineWidth = 2;
-        
-        for (let i = 0; i < bufferLength; i++) {
-            // Log scale for x-axis (frequency)
-            const freq = i * (this.audioContext ? this.audioContext.sampleRate : 44100) / (2 * bufferLength);
-            const minLog = Math.log10(20); // 20Hz
-            const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
-            const xPos = (Math.log10(Math.max(20, freq)) - minLog) / (maxLog - minLog) * width;
-            
-            // Convert from 0-255 to actual dB
-            const minDb = this.analyser ? this.analyser.minDecibels : this.minDecibels;
-            const maxDb = this.analyser ? this.analyser.maxDecibels : this.maxDecibels;
-            const dbValue = minDb + (dataArray[i] / 255) * (maxDb - minDb);
-            
-            // Calculate y position (0 = top of canvas)
-            const y = ((dbValue - maxDb) / (minDb - maxDb)) * height;
-            
-            if (i === 0) {
-                this.freqCtx.moveTo(xPos, y);
-            } else {
-                this.freqCtx.lineTo(xPos, y);
-            }
-        }
-        
-        this.freqCtx.stroke();
-        
-        // Add a peak marker similar to the one in the reference image
-        if (this.demoOscillator) {
-            // Simulate a peak marker at a specific frequency for demo mode
-            const peakFreq = 21; // Hz
-            const peakDb = -53;  // dB
-            
-            const minLog = Math.log10(20);
-            const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
-            const xPos = (Math.log10(Math.max(20, peakFreq)) - minLog) / (maxLog - minLog) * width;
-            
-            const minDb = this.analyser ? this.analyser.minDecibels : this.minDecibels;
-            const maxDb = this.analyser ? this.analyser.maxDecibels : this.maxDecibels;
-            const yPos = ((peakDb - maxDb) / (minDb - maxDb)) * height;
-            
-            // Draw marker
-            this.freqCtx.fillStyle = '#4FC3F7'; // Cyan color
-            this.freqCtx.font = '12px monospace';
-            this.freqCtx.fillText(`${peakDb} dB`, xPos + 5, yPos - 5);
-            this.freqCtx.fillText(`${peakFreq}Hz`, xPos + 5, yPos + 15);
-            
-            // Draw dot
-            this.freqCtx.beginPath();
-            this.freqCtx.arc(xPos, yPos, 4, 0, Math.PI * 2);
-            this.freqCtx.fillStyle = '#FFEB3B';
-            this.freqCtx.fill();
-        }
-    }
-    
-    /**
-     * Draw the spectrogram
-     * @param {Uint8Array} dataArray - Frequency data array from analyser
-     */
-    drawSpectrogram(dataArray) {
-        const width = this.spectrogramCanvas.width;
-        const height = this.spectrogramCanvas.height;
-        const bufferLength = dataArray.length;
-        
-        // Create image data for a single column
-        const imageData = this.spectCtx.createImageData(1, height);
-        
-        // Fill image data for the current column
-        for (let i = 0; i < height; i++) {
-            // Map canvas y position to frequency bin (logarithmic)
-            // This ensures the y-axis matches the frequency canvas
-            const yRatio = 1 - (i / height); // Invert y-axis so lower frequencies are at the bottom
-            const minLog = Math.log10(20); // 20Hz
-            const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
-            const freqLog = minLog + yRatio * (maxLog - minLog);
-            const freq = Math.pow(10, freqLog);
-            
-            // Find the corresponding frequency bin
-            const binIndex = Math.min(
-                bufferLength - 1, 
-                Math.floor(freq * bufferLength * 2 / (this.audioContext ? this.audioContext.sampleRate : 44100))
-            );
-            
-            // Get amplitude value and map to color
-            const value = dataArray[binIndex];
-            
-            // HSL to RGB for nice color gradient (purple-blue to yellow-red)
-            const hue = 270 - (value / 255) * 270; // 270 (purple) to 0 (red)
-            const saturation = 100;
-            const lightness = Math.max(5, Math.min(70, (value / 2.55) + 5));
-            
-            const color = this.hslToRgb(hue / 360, saturation / 100, lightness / 100);
-            
-            // Set pixel values
-            const pixelIndex = i * 4;
-            imageData.data[pixelIndex] = color[0];     // R
-            imageData.data[pixelIndex + 1] = color[1]; // G
-            imageData.data[pixelIndex + 2] = color[2]; // B
-            imageData.data[pixelIndex + 3] = 255;      // A
-        }
-        
-        // Add the column to the spectrogram at the current position
-        this.spectCtx.putImageData(imageData, this.spectrogramOffset, 0);
-        
-        // Increment column position (moving right to left)
-        this.spectrogramOffset++;
-        
-        // If we reach the right edge, scroll left
-        if (this.spectrogramOffset >= width) {
-            // Shift existing spectrogram left
-            this.spectCtx.drawImage(
-                this.spectrogramCanvas,
-                1, 0, width - 1, height,
-                0, 0, width - 1, height
-            );
-            this.spectrogramOffset = width - 1;
-        }
-    }
             
             // Set the file as the source
             const fileURL = URL.createObjectURL(file);
@@ -592,6 +469,7 @@ class SoundAnalyzer {
     drawFrequencyGraph(dataArray) {
         const width = this.frequencyCanvas.width;
         const height = this.frequencyCanvas.height;
+        const bufferLength = dataArray.length;
         
         // Clear canvas
         this.freqCtx.fillStyle = '#222';
@@ -599,14 +477,6 @@ class SoundAnalyzer {
         
         // Draw grid lines
         this.drawGrid(this.freqCtx, width, height);
-        
-        // Calculate bar width based on canvas width
-        const bufferLength = dataArray.length;
-        
-        // Draw frequency line for yellow (secondary) trace
-        this.freqCtx.beginPath();
-        this.freqCtx.strokeStyle = '#FFEB3B';
-        this.freqCtx.lineWidth = 1.5;
         
         // Generate some demo data for second trace if in demo mode
         const secondaryData = new Uint8Array(bufferLength);
@@ -623,6 +493,10 @@ class SoundAnalyzer {
         }
         
         // Draw second trace first (yellow line)
+        this.freqCtx.beginPath();
+        this.freqCtx.strokeStyle = '#FFEB3B';
+        this.freqCtx.lineWidth = 1.5;
+        
         for (let i = 0; i < bufferLength; i++) {
             // Log scale for x-axis (frequency)
             const freq = i * (this.audioContext ? this.audioContext.sampleRate : 44100) / (2 * bufferLength);
@@ -643,3 +517,127 @@ class SoundAnalyzer {
             } else {
                 this.freqCtx.lineTo(xPos, y);
             }
+        }
+        this.freqCtx.stroke();
+        
+        // Draw primary frequency line (red)
+        this.freqCtx.beginPath();
+        this.freqCtx.strokeStyle = '#FF4081';
+        this.freqCtx.lineWidth = 2;
+        
+        for (let i = 0; i < bufferLength; i++) {
+            // Log scale for x-axis (frequency)
+            const freq = i * (this.audioContext ? this.audioContext.sampleRate : 44100) / (2 * bufferLength);
+            const minLog = Math.log10(20); // 20Hz
+            const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
+            const xPos = (Math.log10(Math.max(20, freq)) - minLog) / (maxLog - minLog) * width;
+            
+            // Convert from 0-255 to actual dB
+            const minDb = this.analyser ? this.analyser.minDecibels : this.minDecibels;
+            const maxDb = this.analyser ? this.analyser.maxDecibels : this.maxDecibels;
+            const dbValue = minDb + (dataArray[i] / 255) * (maxDb - minDb);
+            
+            // Calculate y position (0 = top of canvas)
+            const y = ((dbValue - maxDb) / (minDb - maxDb)) * height;
+            
+            if (i === 0) {
+                this.freqCtx.moveTo(xPos, y);
+            } else {
+                this.freqCtx.lineTo(xPos, y);
+            }
+        }
+        
+        this.freqCtx.stroke();
+        
+        // Add a peak marker similar to the one in the reference image
+        if (this.demoOscillator) {
+            // Simulate a peak marker at a specific frequency for demo mode
+            const peakFreq = 21; // Hz
+            const peakDb = -53;  // dB
+            
+            const minLog = Math.log10(20);
+            const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
+            const xPos = (Math.log10(Math.max(20, peakFreq)) - minLog) / (maxLog - minLog) * width;
+            
+            const minDb = this.analyser ? this.analyser.minDecibels : this.minDecibels;
+            const maxDb = this.analyser ? this.analyser.maxDecibels : this.maxDecibels;
+            const yPos = ((peakDb - maxDb) / (minDb - maxDb)) * height;
+            
+            // Draw marker
+            this.freqCtx.fillStyle = '#4FC3F7'; // Cyan color
+            this.freqCtx.font = '12px monospace';
+            this.freqCtx.fillText(`${peakDb} dB`, xPos + 5, yPos - 5);
+            this.freqCtx.fillText(`${peakFreq}Hz`, xPos + 5, yPos + 15);
+            
+            // Draw dot
+            this.freqCtx.beginPath();
+            this.freqCtx.arc(xPos, yPos, 4, 0, Math.PI * 2);
+            this.freqCtx.fillStyle = '#FFEB3B';
+            this.freqCtx.fill();
+        }
+    }
+    
+    /**
+     * Draw the spectrogram
+     * @param {Uint8Array} dataArray - Frequency data array from analyser
+     */
+    drawSpectrogram(dataArray) {
+        const width = this.spectrogramCanvas.width;
+        const height = this.spectrogramCanvas.height;
+        const bufferLength = dataArray.length;
+        
+        // Create image data for a single column
+        const imageData = this.spectCtx.createImageData(1, height);
+        
+        // Fill image data for the current column
+        for (let i = 0; i < height; i++) {
+            // Map canvas y position to frequency bin (logarithmic)
+            // This ensures the y-axis matches the frequency canvas
+            const yRatio = 1 - (i / height); // Invert y-axis so lower frequencies are at the bottom
+            const minLog = Math.log10(20); // 20Hz
+            const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
+            const freqLog = minLog + yRatio * (maxLog - minLog);
+            const freq = Math.pow(10, freqLog);
+            
+            // Find the corresponding frequency bin
+            const binIndex = Math.min(
+                bufferLength - 1, 
+                Math.floor(freq * bufferLength * 2 / (this.audioContext ? this.audioContext.sampleRate : 44100))
+            );
+            
+            // Get amplitude value and map to color
+            const value = dataArray[binIndex];
+            
+            // HSL to RGB for nice color gradient (purple-blue to yellow-red)
+            const hue = 270 - (value / 255) * 270; // 270 (purple) to 0 (red)
+            const saturation = 100;
+            const lightness = Math.max(5, Math.min(70, (value / 2.55) + 5));
+            
+            const color = this.hslToRgb(hue / 360, saturation / 100, lightness / 100);
+            
+            // Set pixel values
+            const pixelIndex = i * 4;
+            imageData.data[pixelIndex] = color[0];     // R
+            imageData.data[pixelIndex + 1] = color[1]; // G
+            imageData.data[pixelIndex + 2] = color[2]; // B
+            imageData.data[pixelIndex + 3] = 255;      // A
+        }
+        
+        // Add the column to the spectrogram at the current position
+        this.spectCtx.putImageData(imageData, this.spectrogramOffset, 0);
+        
+        // Increment column position (moving right to left)
+        this.spectrogramOffset++;
+        
+        // If we reach the right edge, scroll left
+        if (this.spectrogramOffset >= width) {
+            // Shift existing spectrogram left
+            this.spectCtx.drawImage(
+                this.spectrogramCanvas,
+                1, 0, width - 1, height,
+                0, 0, width - 1, height
+            );
+            this.spectrogramOffset = width - 1;
+        }
+    }
+}
