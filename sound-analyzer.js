@@ -596,112 +596,58 @@ class SoundAnalyzer {
         const height = this.spectrogramCanvas.height;
         const bufferLength = dataArray.length;
         
-        // Create image data for a single column or row (depending on orientation)
-        const imageData = this.verticalSpectrogram 
-            ? this.spectCtx.createImageData(width, 1)  // For vertical scrolling (top to bottom)
-            : this.spectCtx.createImageData(1, height); // For horizontal scrolling (left to right)
+        // For vertical spectrogram (time flowing from top to bottom)
+        // Create image data for a single row
+        const imageData = this.spectCtx.createImageData(width, 1);
         
-        // Fill image data (either for a row or column)
-        if (this.verticalSpectrogram) {
-            // Fill image data for current row (vertical spectrogram)
-            for (let i = 0; i < width; i++) {
-                // Map canvas x position to frequency bin (logarithmic)
-                const xRatio = i / width;
-                const minLog = Math.log10(20); // 20Hz
-                const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
-                const freqLog = minLog + xRatio * (maxLog - minLog);
-                const freq = Math.pow(10, freqLog);
-                
-                // Find the corresponding frequency bin
-                const binIndex = Math.min(
-                    bufferLength - 1, 
-                    Math.floor(freq * bufferLength * 2 / (this.audioContext ? this.audioContext.sampleRate : 44100))
-                );
-                
-                // Get amplitude value and map to color
-                const value = dataArray[binIndex];
-                
-                // HSL to RGB for nice color gradient (purple-blue to yellow-red)
-                const hue = 270 - (value / 255) * 270; // 270 (purple) to 0 (red)
-                const saturation = 100;
-                const lightness = Math.max(5, Math.min(70, (value / 2.55) + 5));
-                
-                const color = this.hslToRgb(hue / 360, saturation / 100, lightness / 100);
-                
-                // Set pixel values
-                const pixelIndex = i * 4;
-                imageData.data[pixelIndex] = color[0];     // R
-                imageData.data[pixelIndex + 1] = color[1]; // G
-                imageData.data[pixelIndex + 2] = color[2]; // B
-                imageData.data[pixelIndex + 3] = 255;      // A
-            }
+        // Fill image data for current row - ensure low frequencies are on left, high on right
+        for (let i = 0; i < width; i++) {
+            // Map canvas x position to frequency bin (logarithmic)
+            const xRatio = i / width;
+            const minLog = Math.log10(20); // 20Hz
+            const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
+            const freqLog = minLog + xRatio * (maxLog - minLog);
+            const freq = Math.pow(10, freqLog);
             
-            // Add the column to the spectrogram at the current position
-            this.spectCtx.putImageData(imageData, this.spectrogramOffset, 0);
+            // Find the corresponding frequency bin
+            const binIndex = Math.min(
+                bufferLength - 1, 
+                Math.floor(freq * bufferLength * 2 / (this.audioContext ? this.audioContext.sampleRate : 44100))
+            );
             
-            // Increment column position (moving left to right)
-            this.spectrogramOffset++;
+            // Get amplitude value and map to color
+            const value = dataArray[binIndex];
             
-            // If we reach the right edge, scroll left
-            if (this.spectrogramOffset >= width) {
-                // Shift existing spectrogram left
-                this.spectCtx.drawImage(
-                    this.spectrogramCanvas,
-                    1, 0, width - 1, height,
-                    0, 0, width - 1, height
-                );
-                this.spectrogramOffset = width - 1;
-            }
+            // HSL to RGB for nice color gradient (purple-blue to yellow-red)
+            const hue = 270 - (value / 255) * 270; // 270 (purple) to 0 (red)
+            const saturation = 100;
+            const lightness = Math.max(5, Math.min(70, (value / 2.55) + 5));
+            
+            const color = this.hslToRgb(hue / 360, saturation / 100, lightness / 100);
+            
+            // Set pixel values
+            const pixelIndex = i * 4;
+            imageData.data[pixelIndex] = color[0];     // R
+            imageData.data[pixelIndex + 1] = color[1]; // G
+            imageData.data[pixelIndex + 2] = color[2]; // B
+            imageData.data[pixelIndex + 3] = 255;      // A
         }
-    }[pixelIndex + 2] = color[2]; // B
-                imageData.data[pixelIndex + 3] = 255;      // A
-            }
-            
-            // Add the row to the spectrogram at the current position
-            this.spectCtx.putImageData(imageData, 0, this.spectrogramOffset);
-            
-            // Increment row position (moving top to bottom)
-            this.spectrogramOffset++;
-            
-            // If we reach the bottom edge, scroll up
-            if (this.spectrogramOffset >= height) {
-                // Shift existing spectrogram up
-                this.spectCtx.drawImage(
-                    this.spectrogramCanvas,
-                    0, 1, width, height - 1,
-                    0, 0, width, height - 1
-                );
-                this.spectrogramOffset = height - 1;
-            }
-        } else {
-            // Fill image data for the current column (horizontal spectrogram)
-            for (let i = 0; i < height; i++) {
-                // Map canvas y position to frequency bin (logarithmic)
-                // This ensures the y-axis matches the frequency canvas
-                const yRatio = 1 - (i / height); // Invert y-axis so lower frequencies are at the bottom
-                const minLog = Math.log10(20); // 20Hz
-                const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
-                const freqLog = minLog + yRatio * (maxLog - minLog);
-                const freq = Math.pow(10, freqLog);
-                
-                // Find the corresponding frequency bin
-                const binIndex = Math.min(
-                    bufferLength - 1, 
-                    Math.floor(freq * bufferLength * 2 / (this.audioContext ? this.audioContext.sampleRate : 44100))
-                );
-                
-                // Get amplitude value and map to color
-                const value = dataArray[binIndex];
-                
-                // HSL to RGB for nice color gradient (purple-blue to yellow-red)
-                const hue = 270 - (value / 255) * 270; // 270 (purple) to 0 (red)
-                const saturation = 100;
-                const lightness = Math.max(5, Math.min(70, (value / 2.55) + 5));
-                
-                const color = this.hslToRgb(hue / 360, saturation / 100, lightness / 100);
-                
-                // Set pixel values
-                const pixelIndex = i * 4;
-                imageData.data[pixelIndex] = color[0];     // R
-                imageData.data[pixelIndex + 1] = color[1]; // G
-                imageData.data
+        
+        // Add the row to the spectrogram at the current position
+        this.spectCtx.putImageData(imageData, 0, this.spectrogramOffset);
+        
+        // Increment row position (moving top to bottom)
+        this.spectrogramOffset++;
+        
+        // If we reach the bottom edge, scroll up
+        if (this.spectrogramOffset >= height) {
+            // Shift existing spectrogram up
+            this.spectCtx.drawImage(
+                this.spectrogramCanvas,
+                0, 1, width, height - 1,
+                0, 0, width, height - 1
+            );
+            this.spectrogramOffset = height - 1;
+        }
+    }
+}
