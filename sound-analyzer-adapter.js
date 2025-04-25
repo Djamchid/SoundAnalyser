@@ -74,4 +74,3 @@ window.addEventListener('load', () => {
     };
     
     console.log("Spectrogram adapter initialized");
-});
