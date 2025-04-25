@@ -149,18 +149,11 @@ function adjustSpectrogramDimensions() {
         const width = wrapper.offsetWidth;
         const height = wrapper.offsetHeight;
         
-        // Mise à jour des dimensions du canvas pour garantir une rotation correcte
-        spectrogramCanvas.style.width = height + 'px';
-        spectrogramCanvas.style.height = width + 'px';
-        
-        // Centrer le canvas après rotation
-        const offsetX = (width - height) / 2;
-        const offsetY = (height - width) / 2;
-        spectrogramCanvas.style.transformOrigin = 'center center';
-        spectrogramCanvas.style.position = 'absolute';
-        spectrogramCanvas.style.left = '50%';
-        spectrogramCanvas.style.top = '50%';
-        spectrogramCanvas.style.transform = 'translate(-50%, -50%) rotate(-90deg)';
+        // Le canvas conserve ses dimensions naturelles
+        spectrogramCanvas.width = width * window.devicePixelRatio;
+        spectrogramCanvas.height = height * window.devicePixelRatio;
+        spectrogramCanvas.style.width = '100%';
+        spectrogramCanvas.style.height = '100%';
     }
 }
 
@@ -200,7 +193,8 @@ function handleSpectrogramCanvasHover(event) {
     const y = event.clientY - rect.top;
     
     // Avec la rotation, l'axe Y du wrapper devient l'axe X des fréquences
-    const yRatio = y / rect.height;
+    // L'axe Y est inversé (0 en bas, max en haut)
+    const yRatio = 1 - (y / rect.height);
     
     // Conversion logarithmique pour les fréquences (comme dans l'original)
     const minLog = Math.log10(20);  // 20Hz
