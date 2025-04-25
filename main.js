@@ -24,7 +24,7 @@ let analyzer = null;
  * Initialize the application
  */
 function init() {
-    // Ajustement des dimensions du canevas du spectrogramme
+    // Adjust spectrogram dimensions
     adjustSpectrogramDimensions();
 
     // Create SoundAnalyzer instance
@@ -135,13 +135,19 @@ function init() {
     frequencyCanvas.addEventListener('mousemove', handleFrequencyCanvasHover);
     frequencyCanvas.addEventListener('click', handleFrequencyCanvasClick);
 
-    // Adaptations pour le spectrogramme pivoté
+    // Spectrogram canvas interactions
     spectrogramCanvas.addEventListener('mousemove', handleSpectrogramCanvasHover);
     spectrogramCanvas.addEventListener('click', handleSpectrogramCanvasHover);
+    
+    // Start in demo mode by default
+    analyzer.startDemoMode();
+    startButton.textContent = 'Running in Demo Mode';
+    startButton.disabled = true;
+    stopButton.disabled = false;
 }
 
 /**
- * Ajuste les dimensions du canvas de spectrogramme pour la rotation
+ * Adjusts the dimensions of the spectrogram canvas
  */
 function adjustSpectrogramDimensions() {
     const wrapper = document.querySelector('.spectrogram-wrapper');
@@ -149,7 +155,7 @@ function adjustSpectrogramDimensions() {
         const width = wrapper.offsetWidth;
         const height = wrapper.offsetHeight;
         
-        // Le canvas conserve ses dimensions naturelles
+        // Set canvas dimensions with device pixel ratio for sharp rendering
         spectrogramCanvas.width = width * window.devicePixelRatio;
         spectrogramCanvas.height = height * window.devicePixelRatio;
         spectrogramCanvas.style.width = '100%';
@@ -188,21 +194,21 @@ function handleSpectrogramCanvasHover(event) {
     const wrapper = document.querySelector('.spectrogram-wrapper');
     const rect = wrapper.getBoundingClientRect();
     
-    // Calculer la position relative par rapport au wrapper
+    // Calculate relative position
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
     
-    // Avec la rotation, l'axe Y du wrapper devient l'axe X des fréquences
-    // L'axe Y est inversé (0 en bas, max en haut)
+    // With rotation, Y axis of wrapper becomes X axis of frequencies
+    // Y axis is inverted (0 at bottom, max at top)
     const yRatio = 1 - (y / rect.height);
     
-    // Conversion logarithmique pour les fréquences (comme dans l'original)
+    // Logarithmic conversion for frequencies (like in the original)
     const minLog = Math.log10(20);  // 20Hz
     const maxLog = Math.log10(analyzer.audioContext ? (analyzer.audioContext.sampleRate / 2) : 22050);
     const freqLog = minLog + yRatio * (maxLog - minLog);
     const frequency = Math.round(Math.pow(10, freqLog));
     
-    // Mettre à jour l'affichage
+    // Update display
     hzValue.textContent = `${frequency} Hz`;
 }
 
