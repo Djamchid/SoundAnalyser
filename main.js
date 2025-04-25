@@ -130,6 +130,10 @@ function init() {
     // Click/hover on frequency canvas to show values
     frequencyCanvas.addEventListener('mousemove', handleFrequencyCanvasHover);
     frequencyCanvas.addEventListener('click', handleFrequencyCanvasClick);
+
+    // Click/hover on spectrogram canvas to show frequency values
+    spectrogramCanvas.addEventListener('mousemove', handleSpectrogramCanvasHover);
+    spectrogramCanvas.addEventListener('click', handleSpectrogramCanvasHover);
 }
 
 /**
@@ -151,6 +155,28 @@ function handleFrequencyCanvasHover(event) {
 function handleFrequencyCanvasClick(event) {
     // Same as hover, just to ensure the display updates
     handleFrequencyCanvasHover(event);
+}
+
+/**
+ * Handle mouse movement over spectrogram canvas
+ * @param {MouseEvent} event - Mouse event
+ */
+function handleSpectrogramCanvasHover(event) {
+    if (!analyzer) return;
+    
+    const rect = spectrogramCanvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    // Convert x position to frequency (logarithmic scale)
+    const xRatio = x / rect.width;
+    const minLog = Math.log10(20);  // 20Hz
+    const maxLog = Math.log10(analyzer.audioContext ? (analyzer.audioContext.sampleRate / 2) : 22050);
+    const freqLog = minLog + xRatio * (maxLog - minLog);
+    const frequency = Math.round(Math.pow(10, freqLog));
+    
+    // Update display
+    hzValue.textContent = `${frequency} Hz`;
 }
 
 // Initialize the app when the page loads
