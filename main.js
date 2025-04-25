@@ -33,7 +33,8 @@ function init() {
         spectrogramCanvas: spectrogramCanvas,
         fftSize: parseInt(fftSizeSelect.value),
         minDecibels: parseInt(minDecibelsInput.value),
-        maxDecibels: parseInt(maxDecibelsInput.value)
+        maxDecibels: parseInt(maxDecibelsInput.value),
+        verticalSpectrogram: true // Enable vertical scrolling (top to bottom)
     });
     
     // Handle window resize
@@ -196,16 +197,13 @@ function handleSpectrogramCanvasHover(event) {
     
     // Calculate relative position
     const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
     
-    // With rotation, Y axis of wrapper becomes X axis of frequencies
-    // Y axis is inverted (0 at bottom, max at top)
-    const yRatio = 1 - (y / rect.height);
-    
-    // Logarithmic conversion for frequencies (like in the original)
+    // Convert to frequency (logarithmic scale)
+    // Since our spectrogram is now vertical, X axis represents frequency
+    const xRatio = x / rect.width;
     const minLog = Math.log10(20);  // 20Hz
     const maxLog = Math.log10(analyzer.audioContext ? (analyzer.audioContext.sampleRate / 2) : 22050);
-    const freqLog = minLog + yRatio * (maxLog - minLog);
+    const freqLog = minLog + xRatio * (maxLog - minLog);
     const frequency = Math.round(Math.pow(10, freqLog));
     
     // Update display
