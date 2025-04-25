@@ -60,6 +60,9 @@ class SoundAnalyzer {
         // Clear the spectrogram
         this.spectCtx.fillStyle = 'black';
         this.spectCtx.fillRect(0, 0, this.spectrogramCanvas.width, this.spectrogramCanvas.height);
+        
+        // Reset spectrogram position
+        this.spectrogramOffset = 0;
     }
     
     /**
@@ -437,22 +440,32 @@ class SoundAnalyzer {
     }
     
     /**
-     * Draw the spectrogram
+     * Draw the spectrogram (rotated 90 degrees counterclockwise)
      * @param {Uint8Array} dataArray - Frequency data array from analyser
      */
     drawSpectrogram(dataArray) {
-        // Create image data for a single column
-        const imageData = this.spectCtx.createImageData(1, this.spectrogramCanvas.height);
+        const width = this.spectrogramCanvas.width;
+        const height = this.spectrogramCanvas.height;
         const bufferLength = dataArray.length;
         
-        // Fill image data
-        for (let i = 0; i < this.spectrogramCanvas.height; i++) {
-            // Map canvas y position to frequency bin (logarithmic)
-            const yRatio = 1 - (i / this.spectrogramCanvas.height);
-            const minLog = Math.log10(1);
-            const maxLog = Math.log10(bufferLength);
-            const binLog = minLog + yRatio * (maxLog - minLog);
-            const binIndex = Math.min(bufferLength - 1, Math.floor(Math.pow(10, binLog)));
+        // Create image data for a single row (not column)
+        const imageData = this.spectCtx.createImageData(width, 1);
+        
+        // Fill image data for the current row
+        for (let i = 0; i < width; i++) {
+            // Map canvas x position to frequency bin (logarithmic)
+            // This ensures the x-axis matches the frequency canvas
+            const xRatio = i / width;
+            const minLog = Math.log10(20); // 20Hz
+            const maxLog = Math.log10(this.audioContext ? (this.audioContext.sampleRate / 2) : 22050);
+            const freqLog = minLog + xRatio * (maxLog - minLog);
+            const freq = Math.pow(10, freqLog);
+            
+            // Find the corresponding frequency bin
+            const binIndex = Math.min(
+                bufferLength - 1, 
+                Math.floor(freq * bufferLength * 2 / (this.audioContext ? this.audioContext.sampleRate : 44100))
+            );
             
             // Get amplitude value and map to color
             const value = dataArray[binIndex];
@@ -472,25 +485,30 @@ class SoundAnalyzer {
             imageData.data[pixelIndex + 3] = 255;      // A
         }
         
-        // Add the column to the spectrogram
-        this.spectCtx.putImageData(imageData, this.spectrogramOffset, 0);
+        // Add the row to the spectrogram at the current position
+        this.spectCtx.putImageData(imageData, 0, this.spectrogramOffset);
         
-        // Increment column position
+        // Increment row position (moving down)
         this.spectrogramOffset++;
         
-        // If we reach the edge, loop back to beginning
-        if (this.spectrogramOffset >= this.spectrogramCanvas.width) {
-            // Shift existing spectrogram to the left
+        // If we reach the bottom, scroll up
+        if (this.spectrogramOffset >= height) {
+            // Shift existing spectrogram up
             this.spectCtx.drawImage(
                 this.spectrogramCanvas,
-                1, 0, this.spectrogramCanvas.width - 1, this.spectrogramCanvas.height,
-                0, 0, this.spectrogramCanvas.width - 1, this.spectrogramCanvas.height
+                0, 1, width, height - 1,
+                0, 0, width, height - 1
             );
-            this.spectrogramOffset = this.spectrogramCanvas.width - 1;
+            this.spectrogramOffset = height - 1;
         }
     }
     
     /**
+     * Draw grid lines on the frequency canvas
+     * @param {CanvasRenderingContext2D} ctx - Canvas context
+     * @param {Number} width - Canvas width
+     * @param {Number} height
+     /**
      * Draw grid lines on the frequency canvas
      * @param {CanvasRenderingContext2D} ctx - Canvas context
      * @param {Number} width - Canvas width
