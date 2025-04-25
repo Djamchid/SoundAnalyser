@@ -65,15 +65,13 @@ canvas {
     height: 300px;
     width: 100%;
     position: relative;
+    overflow: hidden; /* Pour éviter le débordement pendant la transformation */
 }
 
 #spectrogramCanvas {
-    /* Rotation du canvas pour l'afficher à 90 degrés dans le sens inverse des aiguilles d'une montre */
-    transform: rotate(-90deg);
-    transform-origin: center center;
+    /* Le canvas lui-même ne sera pas tourné - la rotation sera gérée via JavaScript */
     height: 100%;
     width: 100%;
-    object-fit: cover;
 }
 
 .axis {
