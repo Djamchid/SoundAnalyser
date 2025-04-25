@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Spectrum Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Audio Spectrum Analyzer</h1>
+        
+        <div class="info">
+            <div>Click on the frequency graph to see values. Hover: <span id="hzValue">0 Hz</span> at <span id="dbValue">0 dB</span></div>
+        </div>
+        
+        <div class="source-select">
+            <label for="audioSource">Audio Source:</label>
+            <select id="audioSource">
+                <option value="demo">Demo Mode (No Permissions Required)</option>
+                <option value="mic">Microphone</option>
+                <option value="file">Audio File</option>
+            </select>
+            <input type="file" id="audioFile" accept="audio/*" style="display:none;">
+        </div>
+        
+        <div class="settings">
+            <div>
+                <label for="fftSize">FFT Size:</label>
+                <select id="fftSize">
+                    <option value="512">512</option>
+                    <option value="1024">1024</option>
+                    <option value="2048" selected>2048</option>
+                    <option value="4096">4096</option>
+                    <option value="8192">8192</option>
+                </select>
+            </div>
+            
+            <div>
+                <label for="minDecibels">Min dB:</label>
+                <input type="number" id="minDecibels" value="-100" step="10">
+            </div>
+            
+            <div>
+                <label for="maxDecibels">Max dB:</label>
+                <input type="number" id="maxDecibels" value="0" step="10">
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="startButton">Start Analysis</button>
+            <button id="stopButton" disabled>Stop</button>
+            <button id="resetButton">Reset Spectrogram</button>
+        </div>
+        
+        <div class="analyzer-container">
+            <canvas id="frequencyCanvas"></canvas>
+            <div class="axis x-axis">Frequency (Hz)</div>
+            <div class="axis y-axis">Amplitude (dB)</div>
+        </div>
+        
+        <div class="analyzer-container">
+            <canvas id="spectrogramCanvas"></canvas>
+            <div class="axis x-axis">Time</div>
+            <div class="axis y-axis">Frequency (Hz)</div>
+        </div>
+    </div>
+
+    <script src="sound-analyzer.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
