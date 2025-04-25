@@ -59,8 +59,21 @@ canvas {
     height: 300px;
 }
 
-#spectrogramCanvas {
+/* Ajustements pour le spectrogramme */
+.spectrogram-wrapper {
+    display: flex;
     height: 300px;
+    width: 100%;
+    position: relative;
+}
+
+#spectrogramCanvas {
+    /* Rotation du canvas pour l'afficher à 90 degrés dans le sens inverse des aiguilles d'une montre */
+    transform: rotate(-90deg);
+    transform-origin: center center;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
 }
 
 .axis {
@@ -79,6 +92,20 @@ canvas {
     top: 50%;
     left: 5px;
     transform: translateY(-50%) rotate(-90deg);
+}
+
+/* Position spécifique pour les axes du spectrogramme */
+.spectrogram-wrapper .x-axis {
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.spectrogram-wrapper .y-axis {
+    top: 50%;
+    right: 5px;
+    left: auto;
+    transform: translateY(-50%);
 }
 
 .settings {
@@ -127,17 +154,4 @@ label {
 
 .source-select {
     margin-bottom: 15px;
-}
-
-/* Styles spécifiques pour les axes du spectrogramme */
-#spectrogramCanvas + .x-axis {
-    bottom: 5px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-#spectrogramCanvas + .y-axis {
-    top: 50%;
-    left: 5px;
-    transform: translateY(-50%) rotate(-90deg);
 }
