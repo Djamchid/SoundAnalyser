@@ -1,35 +1,35 @@
 /**
- * Adapter pour le spectrogramme
- * Ce fichier contient un adaptateur qui se place entre sound-analyzer.js et l'interface utilisateur
- * pour effectuer la rotation du spectrogramme sans modifier la classe SoundAnalyzer
+ * Adapter for the spectrogram
+ * This file contains an adapter that sits between sound-analyzer.js and the UI
+ * to perform spectrogram rotation without modifying the SoundAnalyzer class
  */
 
-// Attendre que la page soit chargée
+// Wait for the page to load
 window.addEventListener('load', () => {
-    // Récupérer le canvas original
+    // Get the original canvas
     const originalCanvas = document.getElementById('spectrogramCanvas');
     if (!originalCanvas) return;
     
-    // Créer un proxy pour le contexte du canvas
+    // Create a proxy for the canvas context
     const originalCtx = originalCanvas.getContext('2d');
     const originalPutImageData = originalCtx.putImageData;
     
-    // Redéfinir la méthode putImageData pour effectuer la rotation
+    // Override the putImageData method to perform rotation
     originalCtx.putImageData = function(imageData, dx, dy, ...args) {
-        // Créer un canvas temporaire pour la rotation
+        // Create a temporary canvas for rotation
         const tempCanvas = document.createElement('canvas');
         tempCanvas.width = imageData.height;
         tempCanvas.height = imageData.width;
         const tempCtx = tempCanvas.getContext('2d');
         
-        // Mettre l'image data dans le canvas temporaire
+        // Create image data for the rotated image
         const tempImageData = tempCtx.createImageData(imageData.height, imageData.width);
         
-        // Transposer et inverser les pixels (rotation 90° sens antihoraire)
+        // Transpose and invert pixels (rotate 90° counterclockwise)
         for (let y = 0; y < imageData.height; y++) {
             for (let x = 0; x < imageData.width; x++) {
                 const sourceIndex = (y * imageData.width + x) * 4;
-                // Nouvel index après rotation (x devient y, y devient width-x-1)
+                // New index after rotation (x becomes y, y becomes width-x-1)
                 const targetIndex = ((imageData.width - x - 1) * imageData.height + y) * 4;
                 
                 tempImageData.data[targetIndex] = imageData.data[sourceIndex];
@@ -39,35 +39,35 @@ window.addEventListener('load', () => {
             }
         }
         
-        // Réappliquer sur le canvas original
+        // Apply to the original canvas with adjusted coordinates
         return originalPutImageData.call(this, tempImageData, dy, originalCanvas.width - imageData.width - dx, ...args);
     };
     
-    // Redéfinir également drawImage pour les opérations de scrolling du spectrogramme
+    // Override drawImage for spectrogram scrolling
     const originalDrawImage = originalCtx.drawImage;
     originalCtx.drawImage = function(image, sx, sy, sw, sh, dx, dy, dw, dh) {
-        // Pour le scrolling, nous devons adapter les coordonnées
+        // For scrolling, we need to adapt the coordinates
         if (arguments.length === 9 && image === originalCanvas) {
-            // C'est l'opération de scrolling
+            // This is the scrolling operation
             return originalDrawImage.call(
                 this,
                 image,
-                sy, // sx devient sy
-                originalCanvas.width - sx - sw, // sy devient la position inversée en x
-                sh, // sw reste sh 
-                sw, // sh devient sw
-                dy, // dx devient dy
-                originalCanvas.width - dx - dw, // dy devient la position inversée en x
-                dh, // dw reste dh
-                dw  // dh devient dw
+                sy,                           // sx becomes sy
+                originalCanvas.width - sx - sw, // sy becomes the inverted x position
+                sh,                           // sw remains sh 
+                sw,                           // sh becomes sw
+                dy,                           // dx becomes dy
+                originalCanvas.width - dx - dw, // dy becomes the inverted x position
+                dh,                           // dw remains dh
+                dw                            // dh becomes dw
             );
         } else {
-            // Autres cas de drawImage, passer les arguments tels quels
+            // Other drawImage cases, pass arguments as-is
             return originalDrawImage.apply(this, arguments);
         }
     };
     
-    // Redéfinir fillRect pour la réinitialisation du spectrogramme
+    // Override fillRect for spectrogram reset
     const originalFillRect = originalCtx.fillRect;
     originalCtx.fillRect = function(x, y, width, height) {
         return originalFillRect.call(this, y, x, height, width);
