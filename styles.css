@@ -128,3 +128,16 @@ label {
 .source-select {
     margin-bottom: 15px;
 }
+
+/* Styles spécifiques pour les axes du spectrogramme */
+#spectrogramCanvas + .x-axis {
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#spectrogramCanvas + .y-axis {
+    top: 50%;
+    left: 5px;
+    transform: translateY(-50%) rotate(-90deg);
+}
